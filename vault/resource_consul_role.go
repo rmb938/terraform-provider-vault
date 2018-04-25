@@ -16,7 +16,6 @@ func consulRoleResource() *schema.Resource {
 		Create: consulRoleWrite,
 		Update: consulRoleWrite,
 		Delete: consulRoleDelete,
-		ForceNew:    true,
 		Read:   consulRoleRead,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -26,6 +25,7 @@ func consulRoleResource() *schema.Resource {
 			"name": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
+				ForceNew:    true,
 				Description: "The name of the role",
 			},
 			"role": &schema.Schema{
