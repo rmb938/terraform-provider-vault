@@ -114,6 +114,7 @@ func Provider() terraform.ResourceProvider {
 			"vault_pki_config_ca":                       pkiConfigCAResource(),
 			"vault_pki_config_urls":                     pkiConfigURLsResource(),
 			"vault_pki_role":                            pkiRoleResource(),
+			"vault_consul_role":                         consulRoleResource(),
 		},
 	}
 }
