@@ -119,14 +119,17 @@ func consulRoleRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[DEBUG] consul role: %#v", role)
-	encodedPolicy := role.Data["policy"].(string)
-	policy, err := base64.StdEncoding.DecodeString(encodedPolicy)
-	if err != nil {
-		return fmt.Errorf("error decoding consul policy: %s", err)
-	}
+	tokenType := role.Data["token_type"].(string)
+	d.Set("token_type", tokenType)
+	if tokenType == "client" {
+		encodedPolicy := role.Data["policy"].(string)
+		policy, err := base64.StdEncoding.DecodeString(encodedPolicy)
+		if err != nil {
+			return fmt.Errorf("error decoding consul policy: %s", err)
+		}
 
-	d.Set("policy", string(policy))
-	d.Set("token_type", role.Data["token_type"])
+		d.Set("policy", string(policy))
+	}
 
 	return nil
 }
