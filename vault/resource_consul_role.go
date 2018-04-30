@@ -2,7 +2,6 @@ package vault
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -22,18 +21,24 @@ func consulRoleResource() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
 				Description: "The name of the role",
 			},
-			"role": &schema.Schema{
+			"policy": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "The role document",
+				Description: "The policy document",
 			},
-			"path": &schema.Schema{
+			"token_type": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "client",
+				Description: "Consul token type",
+			},
+			"path": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
@@ -58,13 +63,14 @@ func consulRoleWrite(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
 	name := d.Get("name").(string)
-	role := d.Get("role").(string)
+	policy := d.Get("policy").(string)
+	tokenType := d.Get("token_type").(string)
 	userPath := d.Get("path").(string)
 
 	data := map[string]interface{}{
-		"policy":     base64.StdEncoding.EncodeToString([]byte(role)),
+		"policy":     base64.StdEncoding.EncodeToString([]byte(policy)),
 		"lease":      0,
-		"token_type": "client",
+		"token_type": tokenType,
 	}
 
 	path := userPath + "/roles/" + name
@@ -102,7 +108,7 @@ func consulRoleRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*api.Client)
 
-	log.Printf("[DEBUG] Reading %s from Vault", path)
+	log.Printf("[DEBUG] Reading Consul role %s from Vault", path)
 	role, err := client.Logical().Read(path)
 	if err != nil {
 		return fmt.Errorf("error reading from Vault: %s", err)
@@ -113,15 +119,18 @@ func consulRoleRead(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	log.Printf("[DEBUG] secret: %#v", role)
+	log.Printf("[DEBUG] consul role: %#v", role)
+	tokenType := role.Data["token_type"].(string)
+	d.Set("token_type", tokenType)
+	if tokenType == "client" {
+		encodedPolicy := role.Data["policy"].(string)
+		policy, err := base64.StdEncoding.DecodeString(encodedPolicy)
+		if err != nil {
+			return fmt.Errorf("error decoding consul policy: %s", err)
+		}
 
-	jsonDataBytes, err := json.Marshal(role.Data)
-	if err != nil {
-		return fmt.Errorf("error marshaling JSON for %q: %s", path, err)
+		d.Set("policy", string(policy))
 	}
-	splitPath := strings.Split(path, "/")
-	d.Set("data_json", string(jsonDataBytes))
-	d.Set("path", splitPath[0])
 
 	return nil
 }

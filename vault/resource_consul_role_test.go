@@ -58,7 +58,7 @@ func testResourceConsulRole_initialConfig(name string) string {
 	return fmt.Sprintf(`
 resource "vault_consul_role" "test" {
     name = "%s"
-    role = <<EOT
+    policy = <<EOT
 key "zip/zap" { policy = "read" }
 EOT
 }`, name)
@@ -94,12 +94,12 @@ func testResourceConsulRole_initialCheck(expectedName string) resource.TestCheck
 			return fmt.Errorf("error reading back role: %s", err)
 		}
 
-		decodedRole, err := base64.StdEncoding.DecodeString(role.Data["policy"].(string))
+		decodedPolicy, err := base64.StdEncoding.DecodeString(role.Data["policy"].(string))
 		if err != nil {
 			return fmt.Errorf("error base64 decoding role: %s", err)
 		}
 
-		if got, want := string(decodedRole[:]), "key \"zip/zap\" { policy = \"read\" }"; got != want {
+		if got, want := string(decodedPolicy[:]), "key \"zip/zap\" { policy = \"read\" }"; got != want {
 			return fmt.Errorf("role data is %q; want %q", got, want)
 		}
 
@@ -128,12 +128,12 @@ func testResourceConsulRole_updateCheck(s *terraform.State) error {
 		return fmt.Errorf("error reading back role: %s", err)
 	}
 
-	decodedRole, err := base64.StdEncoding.DecodeString(role.Data["policy"].(string))
+	decodedPolicy, err := base64.StdEncoding.DecodeString(role.Data["policy"].(string))
 	if err != nil {
 		return fmt.Errorf("error base64 decoding role: %s", err)
 	}
 
-	if got, want := string(decodedRole[:]), "key \"zip/zoop\" { policy = \"write\" }"; got != want {
+	if got, want := string(decodedPolicy[:]), "key \"zip/zoop\" { policy = \"write\" }"; got != want {
 		return fmt.Errorf("role data is %q; want %q", got, want)
 	}
 	return nil
